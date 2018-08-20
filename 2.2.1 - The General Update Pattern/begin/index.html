@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+    <style>
+        text { font: bold 48px monospace; }
+        .enter { fill: green; }
+        .update { fill: #333; }
+        .removed { fill: red }
+    </style>
+    <body>
+        <button id="update" value="Update">Update</button>
+        <svg width="960" height="500"></svg>
+        <script src="https://d3js.org/d3.v4.min.js"></script>
+        <script>
+            var svg = d3.select("svg"),
+                width = +svg.attr("width"),
+                height = +svg.attr("height"),
+                g = svg.append("g").attr("transform", 
+                                         "translate(32," + (height / 2) + ")");
+
+            var i = 0;
+            var strings = [
+                "1234567890",
+                "24680",
+                "345678"
+            ];
+            
+            // handle button clicks
+            d3.select("button#update").on("click", 
+                function handleClick(){
+                    if (i >= strings.length) i=0;
+                    update(strings[i++]);
+                }
+            );
+
+            // render the display
+            function update(data){
+                console.log(data);
+            }
+
+            // The initial display.
+            update(strings[i++]);
+        </script>
+    </body>
+</html>

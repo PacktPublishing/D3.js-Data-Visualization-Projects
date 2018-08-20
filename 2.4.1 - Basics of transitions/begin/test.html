@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+
+<head></head>
+<style>
+    .grid line {
+        stroke: lightgrey;
+        stroke-opacity: 0.7;
+        shape-rendering: crispEdges;
+    }
+
+    .grid path {
+        stroke-width: 0;
+    }
+</style>
+
+<body>
+    <script src="../../lib/d3.js"></script>
+    <script src="../../lib/d3-selection-multi.v1.js"></script>
+    <script type="text/javascript">
+        items =[ 
+        { Country: "USA", Year: 2016, Value: 20, Color:'blue' },
+        { Country: "Canada", Year: 2016, Value: 15, Color:'red' },
+        { Country: "USA", Year: 2017, Value: 25, Color:'blue' },
+        { Country: "Mexico", Year: 2017, Value: 5, Color:'green' },
+        ];
+        var svgWidth = 800,
+            svgHeight = 600;
+        var svg = d3.select('body')
+            .append('svg')
+            .attrs({
+                width: svgWidth,
+                height: svgHeight
+            });
+
+        render(items.filter(function (item) { return item.Year === 2016 }));
+
+        function render(theItems){
+            console.log('render starting');
+            console.log(theItems)
+
+            var select = svg.selectAll("circle")
+                .data(theItems, function(d) { return d.Country; });
+
+            console.log('enter starting');
+            select
+                .enter()
+                .append("circle")
+                .each(function(d, i) { console.log(d); })
+                .attrs({
+                    cx: function(d, i) { return (i+1)*45+10;},
+                    cy: svgHeight/2,
+                    width: function(d) { return d.Value; }, 
+                    height: function(d) { return d.Value; }, 
+                    r: function(d) { return d.Value; },
+                    fill: function(d) { return d.Color; },
+                    stroke: 'black'
+                });
+            console.log('enter finished');
+            
+            console.log('exit starting');
+            select
+                .exit()
+                .each(function(d, i) { 
+                    console.log(d); 
+                    console.log(this);
+                    this.remove();
+                });
+
+            console.log('exit finished');
+
+            console.log('update starting');
+            select
+                .each(function(d) { console.log(d); })
+                .attrs({
+                    r: function(d) { return d.Value; }
+                });
+            console.log('update finished');
+
+            console.log('render complete');
+        }
+    </script>
+    <script>
+        function update()
+        {
+            render(items.filter(function (item) { return item.Year === 2017 }));
+        }
+    </script>
+    <button onclick="update()">Update</button>
+</body>
+
+</html>

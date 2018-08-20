@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+
+<head></head>
+<style></style>
+
+<body>
+    <div style="position: relative; left:100px; top:10px;">
+        <button onclick="transitionPosition()">Position</button>
+        <button onclick="transitionSize()">Size</button>
+        <button onclick="transitionColor()">Color</button>
+        <button onclick="transitionOpacity()">Opacity</button>
+        <button onclick="interrupt()">Interrupt</button>
+        <button onclick="chainedTransition()">Chained</button>
+    </div>
+    
+    <script src="../../lib/d3.js"></script>
+    <script src="../../lib/d3-selection-multi.v1.js"></script>
+    <script type="text/javascript">
+        items =[ 
+            { Country: "USA", Year: 2014, Value: 20, Color: 'blue' },
+        ];
+
+        var svgWidth = 800, svgHeight = 600;
+        var svg = d3.select('body')
+            .append('svg')
+            .attrs({ width: svgWidth, height: svgHeight });
+
+        render(items.filter(function (item) { 
+            return item.Year === 2014}));
+
+        function render(theItems){
+            console.log('render starting');
+            console.log(theItems)
+
+            var select = svg.selectAll("circle")
+                .data(theItems, function(d) { return d.Country; });
+
+            console.log('enter starting');
+            select
+                .enter()
+                .append("circle")
+                .each(function(d, i) { console.log(d); })
+                .attrs({
+                    cx: function(d, i) { return (i+1)*45+10;},
+                    cy: svgHeight/2,
+                    width: function(d) { return d.Value; }, 
+                    height: function(d) { return d.Value; }, 
+                    r: function(d) { return d.Value; },
+                    fill: function(d) { return d.Color; },
+                    opacity: 1.0,
+                    stroke: 'black'
+                });
+
+            console.log("enter finished");
+            console.log("render complete")
+        }
+
+        function transitionPosition(){
+            console.log("starting position transition")
+            var transitionDuration = 5000;
+            var select = svg.select("circle");
+            select
+                .transition()
+                .duration(transitionDuration)
+                .attrs({ "cx": 300 });
+            console.log("exiting position transition")
+        }
+
+        function transitionOpacity(){
+            console.log("starting transition")
+            var transitionDuration = 5000;
+            var select = svg.select("circle");
+            select
+                .transition()
+                .duration(transitionDuration)
+                .attr("opacity", 0.0)
+                .on("interrupt", function(d) { console.log("interrupted"); });
+            console.log("exiting transition")
+        }
+
+        function interruptedTransition(){
+            console.log("starting transition")
+            var transitionDuration = 5000;
+            var select = svg.select("circle");
+            select
+                .transition()
+                .duration(transitionDuration)
+                .attr("opacity", 0.0)
+                .on("interrupt", function(d) { 
+                    console.log("interrupted"); 
+                });
+            console.log("exiting transition")
+        }
+
+         function chainedTransition(){
+            console.log("starting transition")
+            var transitionDuration = 5000;
+            var select = svg.select("circle");
+            select
+                .transition()
+                .duration(transitionDuration)
+                .attr("opacity", 0.0)
+                .transition()
+                .duration(transitionDuration)
+                .attr("opacity", 1.0);
+                
+            console.log("exiting transition")
+        }
+
+         function chainedInterruptTransition(){
+            console.log("starting transition")
+            var transitionDuration = 5000;
+            var select = svg.select("circle");
+            select
+                .transition()
+                .duration(transitionDuration)
+                .attr("opacity", 0.0)
+                .on("interrupt", function(d) { 
+                    console.log("interrupted 1"); 
+                })
+                .transition()
+                .duration(transitionDuration)
+                .attr("opacity", 1.0)
+                .on("interrupt", function(d) { 
+                    console.log("interrupted 2"); 
+                });
+                
+            console.log("exiting transition")
+        }
+
+        function interrupt()
+        {
+            svg.selectAll("*").interrupt();
+        }
+    </script>
+</body>
+
+</html>

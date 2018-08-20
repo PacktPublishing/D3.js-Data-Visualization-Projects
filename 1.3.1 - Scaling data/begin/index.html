@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+        <script src="../../lib/d3.js"></script>
+        <script src="../../lib/d3-selection-multi.v1.js"></script>
+
+        <div id='div1'></div>
+
+        <script type="text/javascript">
+            var scheme = d3.schemeCategory20;
+            var data = [0, 1, 2, 3];
+            var scale = d3.scaleIdentity();
+                //.domain(data)
+                //.range(scheme);
+
+            console.log(d3.schemeCategory10);
+
+            d3.select('#div1').selectAll('div')
+                .data(data).enter()
+                .append('div') //.attr('style', function (d) { return 'color: ' + scale(d); })
+                .text(function (d) { 
+                    return d + " " + scale(d);
+                    });
+		</script>
+    </body>
+</html>

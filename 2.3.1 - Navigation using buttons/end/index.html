@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <style>
+        .grid line {
+            stroke: lightgrey;
+            stroke-opacity: 0.7;
+            shape-rendering: crispEdges;
+        }
+        .grid path {
+            stroke-width: 0;
+        }
+    </style>
+    <body>
+        <div>
+            <button id="decrement">-</button>
+            <label style="text-align: center;" id="currentYearLabel"></label>
+            <button id="increment">+</button>
+        </div>
+        <script src="../../lib/d3.js"></script>
+        <script src="../../lib/d3-selection-multi.v1.js"></script>
+		<script type="text/javascript">
+            var svgWidth=800, svgHeight=600;
+
+            var minBubbleSize = 10, maxBubbleSize = 50;
+
+            var outerAxisPadding = 30, yAxisWidth=20, xAxisHeight=20;
+            var margins = {
+                left: outerAxisPadding + yAxisWidth, 
+                top: outerAxisPadding,
+                bottom: outerAxisPadding + xAxisHeight, 
+                right: outerAxisPadding
+            };
+
+            var graphArea = {
+                left: margins.left + maxBubbleSize / 2,
+                top: margins.top + maxBubbleSize / 2,
+                right: svgWidth - margins.right - maxBubbleSize /2,
+                bottom: svgHeight - margins.bottom - maxBubbleSize /2,
+                width: 0,
+                height: 0
+            };
+
+            graphArea.width = graphArea.right - graphArea.left;
+            graphArea.height = graphArea.bottom - graphArea.top;
+
+            var svg = d3.select('body')
+                .append('svg')
+                .attrs({ width: svgWidth, height: svgHeight });
+
+            loadData(function(allYearsData){
+                nested = d3.nest()
+                    .key(function (d) { return d.Year; })
+                    .map(allYearsData);
+
+                years = allYearsData.map(function(d) { return d.Year});
+                minYear = d3.min(years);
+                maxYear = d3.max(years);
+                currentYear = minYear;
+
+                renderAxes(allYearsData);
+
+                bubblesGroup = svg.append('g')
+                    .attr('transform', 'translate(' + graphArea.left + ',' + graphArea.top + ')')
+                    .attr('width', graphArea.width)
+                    .attr('height', graphArea.height);
+
+                renderLegend(allYearsData);
+
+                update(currentYear, nested.get(currentYear));
+            });
+                
+            d3.select("button#increment").on("click", 
+                function handleClick(){
+                    if (currentYear++ >= maxYear) currentYear = maxYear
+                    update(currentYear, nested.get(currentYear));
+                });
+            d3.select("button#decrement").on("click", 
+                function handleClick(){
+                    if (--currentYear < minYear) currentYear = minYear
+                    update(currentYear, nested.get(currentYear));
+                });
+
+            function update(year, data){
+                console.log("rendering: " + year);
+                
+                d3.select("label#currentYearLabel").html(year);
+                
+                selection = bubblesGroup.selectAll('circle')
+                        .data(data, function (d) { return d.CountryCode; });
+
+                console.log("entering");
+                entering = selection
+                    .enter()
+                    .each(function(d, i){ console.log(d, i); })
+                    .append('circle')
+                    .merge(selection)
+                    .attrs(function (d){
+                        return {
+                            cx: xScale(d.LifeExp),
+                            cy: yScale(d.FertRate),
+                            r: popScale(d.Population),
+                            fill: regionColorMap(d.Region),
+                            stroke: 'black'
+                        };
+                    });
+
+                console.log("exiting");
+                exiting = selection
+                    .exit()
+                    .each(function (d,i) { console.log(d,i); })
+                    .remove();
+            }
+
+            function loadData(onLoadComplete){
+                d3.csv("../../data/chart_data.csv",
+                function (error, rawData) {
+                    var allYearsData = rawData.map(function (d) {
+                        return {
+                            CountryCode: d.CountryCode,
+                            CountryName: d.CountryName,
+                            LifeExp: +d.LifeExp,
+                            FertRate: +d.FertRate,
+                            Population: +d.Population,
+                            Region: d.Region,
+                            Year: +d.Year
+                        }});
+                    onLoadComplete(allYearsData);
+                })};
+
+
+            function renderAxes(allData){
+                var lifeExpectancies = allData.map(function(d) { return d.LifeExp; });
+                xScale = d3.scaleLinear()
+                    .domain([0, d3.max(lifeExpectancies)])
+                    .range([0, graphArea.width]);
+
+                var fertRates = allData.map(function(d) { return d.FertRate; });
+                yScale = d3.scaleLinear()
+                    .domain([d3.max(fertRates), 0])
+                    .range([0, graphArea.height]);
+                    
+                var populations = allData.map(function(d) { return d.Population; });
+                popScale = d3.scaleLinear()
+                    .domain([d3.min(populations), d3.max(populations)])
+                    .range([minBubbleSize, maxBubbleSize]);
+
+                var xAxis = d3.axisBottom().scale(xScale);
+                var yAxis = d3.axisLeft().scale(yScale);
+
+                var yAxisNodes = svg.append('g')
+                    .attr('transform', 'translate(' + margins.left + ',' + graphArea.top + ')')
+                    .call(yAxis);                    
+                var xAxisNodes = svg.append('g')
+                    .attr('transform', 'translate(' + graphArea.left + ',' + (svgHeight - margins.bottom) + ')')
+                    .call(xAxis);
+
+                svg.append('g')
+                    .call(yAxis.tickFormat("").tickSize(-graphArea.width - maxBubbleSize/2))
+                    .attr('transform', 'translate(' + margins.left + ',' + graphArea.top +')')
+                    .attr('class', 'grid');
+
+                svg.append('g')
+                    .call(xAxis.tickFormat("").tickSize(-graphArea.height - maxBubbleSize/2))
+                    .attr('transform', 'translate(' + graphArea.left + ',' + (graphArea.bottom + maxBubbleSize/2) +')')
+                    .attr('class', 'grid');
+
+                svg.append("text")
+                    .attr("transform", "translate(" + (graphArea.left + graphArea.width / 2) + " ," + (svgHeight - 15) + ")")
+                    .style("text-anchor", "middle")
+                    .text("Life Expectancy");
+
+                svg.append("text")
+                    .attr("transform", "rotate(90)")
+                    .attr("y", -30)
+                    .attr("x", graphArea.top + graphArea.height / 2)
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .text("Fertility Rate");    
+            }
+
+            function renderLegend(allData) {
+                regionColorMap = d3.scaleOrdinal(d3.schemeCategory10)
+                    .domain(d3.set(allData.map(function(d) { return d.Region; })).values());
+                var legendGroup = svg.append('g')
+                    .attr('transform', 'translate(' + graphArea.left + ',' + graphArea.top + ')');
+
+                var legendBox = legendGroup
+                    .append('rect')
+                    .attrs({
+                        fill: 'white',
+                        stroke: 'black',
+                        width: 300,
+                        height: regionColorMap.domain().length * 25 + 10,
+                        'fill-opacity': 0.5
+                    });
+                var subLegendGroup = legendGroup.append('g');
+                var legendSubGroups = subLegendGroup.selectAll('rect')
+                    .data(regionColorMap.domain())
+                    .enter()
+                    .append('g')
+                    .attr('transform', function (d,i){
+                        return 'translate(10,' + ((i*25)+5) + ')';
+                    });
+                    
+                legendSubGroups
+                    .append('rect')
+                    .attrs({
+                        x:0, y:0, 
+                        width: 20, height: 20,
+                        fill: function (d,i){
+                            return regionColorMap(d);
+                        }
+                    });
+
+                var legendTexts = legendSubGroups
+                    .append('text')
+                    .text(function (d) { return d; })
+                    .attrs({
+                        x: 25,
+                        y: 15
+                    });
+
+                var max = d3.max(legendTexts.nodes(),
+                    n=> n.getComputedTextLength());
+
+                legendBox.attr('width', max+25+20);
+            }
+
+            function styleAxisNodes(axisNodes) {
+                axisNodes.selectAll('.domain')
+                    .attr({
+                        fill: 'none',
+                        'stroke-width': 1,
+                        stroke: 'black'
+                    });
+                axisNodes.selectAll('.tick line')
+                    .attr({
+                        fill: 'none',
+                        'stroke-width': 1,
+                        stroke: 'black'
+                    });
+            }
+		</script>
+    </body>
+</html>

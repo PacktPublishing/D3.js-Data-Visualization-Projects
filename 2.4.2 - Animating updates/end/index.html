@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+
+<head></head>
+<style>
+    .grid line {
+        stroke: lightgrey;
+        stroke-opacity: 0.7;
+        shape-rendering: crispEdges;
+    }
+
+    .grid path {
+        stroke-width: 0;
+    }
+
+    svg
+    {
+        position: absolute;
+    }
+</style>
+
+<body>
+
+    <br/>
+    <script src="../../lib/d3.js"></script>
+    <script src="../../lib/d3-selection-multi.v1.js"></script>
+    <script type="text/javascript">
+        items =[ 
+            { Country: "USA", Year: 2015, Value: 20, X: 20, Y:20, Color: 'blue' },
+            { Country: "USA", Year: 2016, Value: 40, X: 40, Y:40, Color: 'blue' },
+            { Country: "Canada", Year: 2016, Value: 15, X: 20, Y:80, Color: 'red' },
+            { Country: "Canada", Year: 2017, Value: 25, X: 40, Y:60, Color: 'red' },
+        ];
+
+        var svgWidth = 500,
+            svgHeight = 500;
+        var svg = d3.select('body')
+            .append('svg')
+            .attrs({
+                width: svgWidth,
+                height: svgHeight
+            });
+
+        currentYear = 2015
+        render(items.filter(function (item) { return item.Year === currentYear }));
+
+        function render(theItems){
+            console.log('render starting');
+            console.log(theItems)
+
+            var select = svg.selectAll("circle")
+                .data(theItems, function(d) { return d.Country; });
+            
+            var transitionDuration = 1000;
+
+            console.log('enter starting');
+            select
+                .enter()
+                .append("circle")
+                .attrs({
+                    cx: function(d, i) { return d.X*5;},
+                    cy: function(d, i) { return d.Y*5;},
+                    r: function(d) { return d.Value*10; },
+                    fill: function(d) { return d.Color; },
+                    opacity: 0.0,
+                    stroke: 'black'
+                })
+                .each(function(d, i) { console.log(d); })
+                .transition()
+                .on("start", function (d) { console.log("starting"); })
+                .on("end", function (d) { console.log("ended"); })
+                .duration(transitionDuration)
+                .ease(d3.easeLinear)
+                .attrs({
+                    cx: function(d, i) { return d.X*5;},
+                    cy: function(d, i) { return d.Y*5;},
+                    r: function(d) { return d.Value; },
+                    fill: function(d) { return d.Color; },
+                    opacity: 1.0,
+                    stroke: 'black'
+                });
+            console.log('enter finished');
+            
+            console.log('exit starting');
+
+            select
+                .exit()
+                .each(function(d, i) { 
+                    console.log(d); 
+                    console.log(this);
+                })
+                .transition()
+                .duration(transitionDuration)
+                .on("interrupt", function(d) { console.log("interrupted");
+                this.remove(); })
+                .attr("opacity", 0)
+                .attr("r", function(d) { return d.Value*10})
+                .remove();
+
+            console.log('exit finished');
+
+            console.log('update starting');
+            select
+                .each(function(d, i) { 
+                    console.log(d); 
+                    console.log(this);
+                })
+                .transition()
+                .ease(d3.easeLinear)
+                .duration(transitionDuration)
+                .attrs({
+                    r: function(d) { return d.Value; },
+                    cx: function(d, i) { return d.X*5;},
+                    cy: function(d, i) { return d.Y*5;}
+                });              
+            console.log('update finished');
+
+            console.log('render complete');
+
+
+        }
+        function next()
+        {
+            console.log("next");
+            currentYear++;
+            render(items.filter(function (item) { return item.Year === currentYear }));
+        }
+    </script>
+    <script>
+
+        function interrupt()
+        {
+            svg.selectAll("*").interrupt();
+        }
+    </script>
+    <div style="position: relative; left:10px; top:10px;">
+        <button onclick="next()">Next</button>
+    </div>
+</body>
+
+</html>

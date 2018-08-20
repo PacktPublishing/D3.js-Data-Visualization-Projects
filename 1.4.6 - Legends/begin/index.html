@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+        <script src="../../lib/d3.js"></script>
+        <script src="../../lib/d3-selection-multi.v1.js"></script>
+		<script type="text/javascript">
+            var svgWidth=800, svgHeight=600;
+            var svg = d3.select('body')
+                .append('svg')
+                .attrs({ width: svgWidth, height: svgHeight, 
+                         style: 'background-color: #EEEEEE' });
+
+            d3.csv("../../data/year2015.csv",
+                function (error, rawData) {
+                    var data = rawData.map(function (d) {
+                        return {
+                            CountryCode: d.CountryCode,
+                            CountryName: d.CountryName,
+                            LifeExp: +d.LifeExp,
+                            FertRate: +d.FertRate,
+                            Population: +d.Population,
+                            Region: d.Region,
+                            Year: d.Year
+                        }});
+
+                    var minBubbleSize = 10, maxBubbleSize = 50;
+
+                    var outerAxisPadding = 30, yAxisWidth=20, xAxisHeight=55;
+                    var margins = {
+                        left: outerAxisPadding + yAxisWidth, 
+                        top: outerAxisPadding,
+                        bottom: outerAxisPadding + xAxisHeight, 
+                        right: outerAxisPadding
+                    };
+
+                    var graphArea = {
+                        left: margins.left + maxBubbleSize / 2,
+                        top: margins.top + maxBubbleSize / 2,
+                        right: svgWidth - margins.right - maxBubbleSize /2,
+                        bottom: svgHeight - margins.bottom - maxBubbleSize /2,
+                        width: 0,
+                        height: 0
+                    };
+                    graphArea.width = graphArea.right - graphArea.left;
+                    graphArea.height = graphArea.bottom - graphArea.top;
+
+                    var bubblesGroup = svg.append('g')
+                        .attr('transform', 'translate(' + graphArea.left + ',' + graphArea.top + ')')
+                        .attr('width', graphArea.width)
+                        .attr('height', graphArea.height);
+
+                    bubblesGroup.append('rect')
+                        .attr('fill', '#FF0000')
+                        .attr('width', graphArea.width)
+                        .attr('height',graphArea.height)
+                        .attr('fill-opacity', 0.2);
+
+                    var lifeExpectancies = data.map(function(d) { return d.LifeExp; });
+                    var xScale = d3.scaleLinear()
+                        .domain([0, d3.max(lifeExpectancies)])
+                        .range([0, graphArea.width]);
+
+                    var fertRates = data.map(function(d) { return d.FertRate; });
+                    var yScale = d3.scaleLinear()
+                        .domain([d3.max(fertRates), 0])
+                        .range([0, graphArea.height]);
+                        
+                    var populations = data.map(function(d) { return d.Population; });
+                    var popScale = d3.scaleLinear()
+                        .domain([d3.min(populations), d3.max(populations)])
+                        .range([minBubbleSize, maxBubbleSize]);
+
+                    var regionColorMap = d3.scaleOrdinal(d3.schemeCategory10)
+                        .domain(d3.set(data.map(function(d) { return d.Region; })));
+
+                    var xAxis = d3.axisBottom().scale(xScale);
+                    var yAxis = d3.axisLeft().scale(yScale);
+
+                    var yAxisNodes = svg.append('g')
+                        .attr('transform', 'translate(' + margins.left + ',' + graphArea.top + ')')
+                        .call(yAxis);                    
+                    var xAxisNodes = svg.append('g')
+                        .attr('transform', 'translate(' + graphArea.left + ',' + (svgHeight - margins.bottom) + ')')
+                        .call(xAxis);
+                        
+                    bubblesGroup.selectAll('circle')
+                        .data(data)
+                        .enter()
+                        .append('circle')
+                        .attrs(function (d){
+                            return {
+                                cx: xScale(d.LifeExp),
+                                cy: yScale(d.FertRate),
+                                r: popScale(d.Population),
+                                fill: regionColorMap(d.Region),
+                                stroke: 'black'
+                            };
+                        });
+
+                    var legendGroup = svg.append('g')
+                        .attr('transform', 'translate(' + graphArea.left + ',' + graphArea.top + ')');
+                    
+                    var legendBox = legendGroup
+                        .append('rect')
+                        .attrs({
+                            fill: 'white',
+                            stroke: 'black',
+                            width: 300,
+                            height: regionColorMap.domain().length * 25 + 10,
+                            'fill-opacity': 0.5
+                        });
+                    
+                    var subLegendGroup = legendGroup.append('g');
+                    var legendSubGroups = subLegendGroup.selectAll('rect')
+                        .data(regionColorMap.domain())
+                        .enter()
+                        .append('g')
+                        .attr('transform', function (d, i){
+                            return 'translate(10,' + ((i*25)+5) + ')';
+                        });
+
+                    legendSubGroups
+                        .append('rect')
+                        .attrs({
+                            x:0, y:0,
+                            width:20, height:20,
+                            fill: function (d){
+                                return regionColorMap(d);
+                            }
+                        });
+                    
+                    var legendTexts = legendSubGroups
+                        .append('text')
+                        .text(function (d) { return d; })
+                        .attrs({ x:25, y:15 });
+
+                    var max = d3.max(legendTexts.nodes(), 
+                        n => n.getComputedTextLength());
+
+                    legendBox.attr('width', max+25+20);
+                    
+                    svg.append("text")
+                        .attr("transform", "translate(" + (graphArea.left + graphArea.width / 2) + " ," + (svgHeight - 15) + ")")
+                        .style("text-anchor", "middle")
+                        .text("Life Expectancy");
+
+                    svg.append("text")
+                        .attr("transform", "rotate(90)")
+                        .attr("y", -30)
+                        .attr("x", graphArea.top + graphArea.height / 2)
+                        .attr("dy", "1em")
+                        .style("text-anchor", "middle")
+                        .text("Fertility Rate");    
+                });
+
+            function styleAxisNodes(axisNodes) {
+                axisNodes.selectAll('.domain')
+                    .attr({
+                        fill: 'none',
+                        'stroke-width': 1,
+                        stroke: 'black'
+                    });
+                axisNodes.selectAll('.tick line')
+                    .attr({
+                        fill: 'none',
+                        'stroke-width': 1,
+                        stroke: 'black'
+                    });
+            }
+
+		</script>
+    </body>
+</html>

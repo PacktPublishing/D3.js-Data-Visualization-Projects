@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+        <div id="viz"></div>
+        
+        <script src="../../../lib/d3.js"></script>
+        <script type="text/javascript">
+            console.log("starting d3 code");
+            var sampleSVG = d3.select("#viz")
+                .append("svg")
+                .attr("width", 100)
+                .attr("height", 100);
+            sampleSVG.append("circle")
+                .style("stroke", "black")
+                .style("fill", "red")
+                .attr("r", 40)
+                .attr("cx", 50)
+                .attr("cy", 50);
+        </script>
+    </body>
+</html>
